@@ -72,7 +72,15 @@ col1, col2 = st.columns([3, 2])  # Column 1: charts, Column 2: table + insights
 # ----------------------------
 # Column 1: Charts
 # ----------------------------
-with col1:
+with col1: 
+    # Sentiment Score Guide
+    st.markdown("### 📊 Sentiment Score Guide")
+    sentiment_info = pd.DataFrame({
+        "Score": ["-1.0 → -0.1", "0.0", "+0.1 → +1.0"],
+        "Meaning": ["Negative", "Neutral", "Positive"]
+    })
+    st.table(sentiment_info)
+    
     # Horizontal Bar Chart
     st.subheader("Sentiment Bar Chart")
     short_labels = [h if len(h) <= 50 else h[:47] + "..." for h in df["Headline"]]
