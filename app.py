@@ -1,58 +1,40 @@
 import streamlit as st
 import pandas as pd
 from textblob import TextBlob
+from newsapi import NewsApiClient
 import matplotlib.pyplot as plt
+import plotly.express as px
 
 # ----------------------------
 # Page configuration
 # ----------------------------
-st.set_page_config(page_title="Stock News Sentiment", layout="wide")
-st.title("🚀 Stock News Sentiment Analyzer")
+st.set_page_config(
+    page_title="Stock News Sentiment",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-st.info("Enter a ticker symbol below to fetch the latest news and sentiment analysis.")
-
-# ----------------------------
-# User input: ticker
-# ----------------------------
-ticker = st.text_input("Enter a company ticker (e.g., AAPL, TSLA):", "AAPL").upper()
-
-# ----------------------------
-# Initialize news variables
-# ----------------------------
-headlines = []
-api_ready = False
+st.title("📈 Stock News Sentiment Analyzer")
+st.markdown("Analyze recent news headlines for any company and visualize sentiment. Powered by NewsAPI and TextBlob.")
 
 # ----------------------------
-# Attempt to load NewsAPI
+# Sidebar input
 # ----------------------------
+st.sidebar.header("User Input")
+ticker = st.sidebar.text_input("Enter a company ticker (e.g., AAPL, TSLA):", "AAPL")
+
+# ----------------------------
+# Fetch news from NewsAPI
+# ----------------------------
+# Make sure your NewsAPI key is in Streamlit Secrets
+NEWSAPI_KEY = st.secrets["newsapi"]["key"]
+newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
+
 try:
-    from newsapi import NewsApiClient
-    NEWSAPI_KEY = st.secrets["newsapi"]["key"]
-    newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
-    api_ready = True
-except KeyError:
-    st.warning("⚠️ NewsAPI key not found in Secrets. Using placeholder headlines.")
-except ImportError:
-    st.warning("⚠️ NewsAPI library not installed. Using placeholder headlines.")
-
-# ----------------------------
-# Fetch news safely
-# ----------------------------
-if api_ready:
-    try:
-        articles = newsapi.get_everything(q=ticker, language='en', page_size=20)['articles']
-        headlines = [a['title'] for a in articles if a['title'] is not None]
-        if not headlines:
-            st.warning("No news found for this ticker. Using placeholder headlines.")
-            api_ready = False
-    except Exception as e:
-        st.warning(f"Could not fetch news: {e}")
-        api_ready = False
-
-# ----------------------------
-# Use placeholder if API fails
-# ----------------------------
-if not api_ready:
+    articles = newsapi.get_everything(q=ticker, language='en', page_size=20)['articles']
+    headlines = [a['title'] for a in articles if a['title'] is not None]
+except:
+    st.warning("Could not fetch news. Showing placeholder headlines.")
     headlines = [
         f"{ticker} stock surges after earnings report",
         f"{ticker} faces regulatory investigation",
@@ -67,19 +49,38 @@ sentiments = [TextBlob(h).sentiment.polarity for h in headlines]
 df = pd.DataFrame({"Headline": headlines, "Sentiment": sentiments})
 
 # ----------------------------
-# Bar chart
+# Summary metrics
 # ----------------------------
-st.subheader("📊 Sentiment Bar Chart")
-st.bar_chart(df["Sentiment"])
-
-# ----------------------------
-# Pie chart
-# ----------------------------
-st.subheader("📈 Sentiment Distribution")
 pos = sum(s > 0 for s in sentiments)
 neg = sum(s < 0 for s in sentiments)
 neu = sum(s == 0 for s in sentiments)
 
+col1, col2, col3 = st.columns(3)
+col1.metric("Positive Headlines", pos)
+col2.metric("Negative Headlines", neg)
+col3.metric("Neutral Headlines", neu)
+
+# ----------------------------
+# Sentiment Bar Chart (colored)
+# ----------------------------
+st.subheader("Sentiment Bar Chart")
+colors = ["green" if s > 0 else "red" if s < 0 else "gray" for s in df["Sentiment"]]
+
+fig_bar = px.bar(
+    df,
+    x="Headline",
+    y="Sentiment",
+    color=df["Sentiment"] > 0,
+    color_discrete_map={True: "green", False: "red"},
+    labels={"color": "Positive?"},
+    height=400
+)
+st.plotly_chart(fig_bar, use_container_width=True)
+
+# ----------------------------
+# Pie chart
+# ----------------------------
+st.subheader("Sentiment Distribution")
 pie_labels = ["Positive", "Negative", "Neutral"]
 pie_counts = [pos, neg, neu]
 
@@ -90,5 +91,5 @@ st.pyplot(fig)
 # ----------------------------
 # Headlines table
 # ----------------------------
-st.subheader("📰 News Headlines and Sentiment Scores")
-st.dataframe(df)
+st.subheader("News Headlines and Sentiment Scores")
+st.dataframe(df.style.background_gradient(cmap="RdYlGn", subset=["Sentiment"]))
