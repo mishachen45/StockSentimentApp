@@ -75,12 +75,13 @@ col3.metric("Neutral Headlines", neu)
 # ----------------------------
 # Layout: Charts + Table + Insights
 # ----------------------------
-main_col, table_col = st.columns([3, 2])  # 3:2 ratio
+chart_col, table_col, insights_col = st.columns([3, 2, 1])  # 3:2:1 ratio
 
-with main_col:
-    # ----------------------------
+# ----------------------------
+# Column 1: Charts
+# ----------------------------
+with chart_col:
     # Horizontal Bar Chart
-    # ----------------------------
     st.subheader("Sentiment Bar Chart")
     short_labels = [h if len(h) <= 50 else h[:47] + "..." for h in df["Headline"]]
 
@@ -97,9 +98,7 @@ with main_col:
     fig_bar.update_layout(yaxis={'automargin': True})
     st.plotly_chart(fig_bar, use_container_width=True)
 
-    # ----------------------------
     # Smaller Pie Chart
-    # ----------------------------
     st.subheader("Sentiment Distribution")
     pie_labels = ["Positive", "Negative", "Neutral"]
     pie_counts = [pos, neg, neu]
@@ -108,11 +107,18 @@ with main_col:
     ax.pie(pie_counts, labels=pie_labels, autopct="%1.1f%%", colors=["green", "red", "gray"])
     st.pyplot(fig)
 
-    # ----------------------------
-    # Key Insights Panel
-    # ----------------------------
-    st.subheader("📊 Key Insights")
+# ----------------------------
+# Column 2: Table
+# ----------------------------
+with table_col:
+    st.subheader("News Headlines and Sentiment Scores")
+    st.dataframe(df.style.background_gradient(cmap="RdYlGn", subset=["Sentiment"]))
 
+# ----------------------------
+# Column 3: Key Insights
+# ----------------------------
+with insights_col:
+    st.subheader("📊 Key Insights")
     if len(df) == 0:
         st.write("No news data available to generate insights.")
     else:
@@ -125,13 +131,12 @@ with main_col:
         else:
             overall_sentiment = "Neutral"
 
-        # Most positive / negative headlines
         most_pos_idx = df['Sentiment'].idxmax()
         most_neg_idx = df['Sentiment'].idxmin()
 
         # Display insights
         st.markdown(f"**Overall Sentiment:** {overall_sentiment} ({avg_sentiment:.2f})")
-        st.markdown(f"**Total Articles Analyzed:** {len(df)}")
+        st.markdown(f"**Total Articles:** {len(df)}")
         st.markdown(f"**Positive:** {pos}, **Negative:** {neg}, **Neutral:** {neu}")
         st.markdown(f"**Most Positive Headline:** {df['Headline'][most_pos_idx]}")
         st.markdown(f"**Most Negative Headline:** {df['Headline'][most_neg_idx]}")
@@ -143,10 +148,3 @@ with main_col:
             st.error("Market sentiment looks unfavorable for this company.")
         else:
             st.info("Market sentiment is fairly neutral at the moment.")
-
-with table_col:
-    # ----------------------------
-    # Headlines Table
-    # ----------------------------
-    st.subheader("News Headlines and Sentiment Scores")
-    st.dataframe(df.style.background_gradient(cmap="RdYlGn", subset=["Sentiment"]))
