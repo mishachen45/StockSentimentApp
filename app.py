@@ -79,7 +79,9 @@ with col1:
     st.markdown("### 📊 Sentiment Reference")
     sentiment_ref = pd.DataFrame({
         "Sentiment Score": [-1, 0, 1],
-        "Meaning": ["Extreme Negative", "Neutral", "
+        "Meaning": ["Extreme Negative", "Neutral", "Extreme Positive"]
+    })
+    st.table(sentiment_ref)
     # Horizontal Bar Chart
     st.subheader("Sentiment Bar Chart")
     short_labels = [h if len(h) <= 50 else h[:47] + "..." for h in df["Headline"]]
