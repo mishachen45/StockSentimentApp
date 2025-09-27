@@ -67,20 +67,12 @@ pos = sum(s > 0 for s in sentiments)
 neg = sum(s < 0 for s in sentiments)
 neu = sum(s == 0 for s in sentiments)
 
-col1, col2, col3 = st.columns(3)
-col1.metric("Positive Headlines", pos)
-col2.metric("Negative Headlines", neg)
-col3.metric("Neutral Headlines", neu)
-
-# ----------------------------
-# Layout: Charts + Table + Insights
-# ----------------------------
-chart_col, table_col, insights_col = st.columns([3, 2, 1])  # 3:2:1 ratio
+col1, col2 = st.columns([3, 2])  # Column 1: charts, Column 2: table + insights
 
 # ----------------------------
 # Column 1: Charts
 # ----------------------------
-with chart_col:
+with col1:
     # Horizontal Bar Chart
     st.subheader("Sentiment Bar Chart")
     short_labels = [h if len(h) <= 50 else h[:47] + "..." for h in df["Headline"]]
@@ -108,16 +100,14 @@ with chart_col:
     st.pyplot(fig)
 
 # ----------------------------
-# Column 2: Table
+# Column 2: Table + Key Insights
 # ----------------------------
-with table_col:
+with col2:
+    # Headlines Table
     st.subheader("News Headlines and Sentiment Scores")
     st.dataframe(df.style.background_gradient(cmap="RdYlGn", subset=["Sentiment"]))
 
-# ----------------------------
-# Column 3: Key Insights
-# ----------------------------
-with insights_col:
+    # Key Insights Panel
     st.subheader("📊 Key Insights")
     if len(df) == 0:
         st.write("No news data available to generate insights.")
