@@ -26,7 +26,6 @@ ticker = st.sidebar.text_input("Enter a company ticker (e.g., AAPL, TSLA):", "AA
 # ----------------------------
 # Fetch news from NewsAPI
 # ----------------------------
-# Make sure your NewsAPI key is in Streamlit Secrets
 NEWSAPI_KEY = st.secrets["newsapi"]["key"]
 newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
 
@@ -34,10 +33,10 @@ try:
     articles = newsapi.get_everything(
         q=ticker,
         language='en',
-        page_size=20  # max for free NewsAPI
+        page_size=20
     )['articles']
 
-    # Combine title + description + content for sentiment analysis
+    # Combine title + description + content
     headlines = []
     for a in articles:
         text = a.get('title') or ''
@@ -74,33 +73,44 @@ col2.metric("Negative Headlines", neg)
 col3.metric("Neutral Headlines", neu)
 
 # ----------------------------
-# Sentiment Bar Chart (colored)
+# Layout: charts and table
 # ----------------------------
-st.subheader("Sentiment Bar Chart")
-fig_bar = px.bar(
-    df,
-    x="Headline",
-    y="Sentiment",
-    color=df["Sentiment"] > 0,
-    color_discrete_map={True: "green", False: "red"},
-    labels={"color": "Positive?"},
-    height=400
-)
-st.plotly_chart(fig_bar, use_container_width=True)
+main_col, table_col = st.columns([3, 2])  # 3:2 ratio
 
-# ----------------------------
-# Pie chart
-# ----------------------------
-st.subheader("Sentiment Distribution")
-pie_labels = ["Positive", "Negative", "Neutral"]
-pie_counts = [pos, neg, neu]
+with main_col:
+    # ----------------------------
+    # Horizontal Bar Chart
+    # ----------------------------
+    st.subheader("Sentiment Bar Chart")
+    short_labels = [h if len(h) <= 50 else h[:47] + "..." for h in df["Headline"]]
 
-fig, ax = plt.subplots()
-ax.pie(pie_counts, labels=pie_labels, autopct="%1.1f%%", colors=["green", "red", "gray"])
-st.pyplot(fig)
+    fig_bar = px.bar(
+        df,
+        x="Sentiment",
+        y=short_labels,
+        orientation='h',
+        color=df["Sentiment"] > 0,
+        color_discrete_map={True: "green", False: "red"},
+        labels={"y": "Headline", "color": "Positive?"},
+        height=600
+    )
+    fig_bar.update_layout(yaxis={'automargin': True})
+    st.plotly_chart(fig_bar, use_container_width=True)
 
-# ----------------------------
-# Headlines table
-# ----------------------------
-st.subheader("News Headlines and Sentiment Scores")
-st.dataframe(df.style.background_gradient(cmap="RdYlGn", subset=["Sentiment"]))
+    # ----------------------------
+    # Smaller Pie Chart
+    # ----------------------------
+    st.subheader("Sentiment Distribution")
+    pie_labels = ["Positive", "Negative", "Neutral"]
+    pie_counts = [pos, neg, neu]
+
+    fig, ax = plt.subplots(figsize=(4, 4))
+    ax.pie(pie_counts, labels=pie_labels, autopct="%1.1f%%", colors=["green", "red", "gray"])
+    st.pyplot(fig)
+
+with table_col:
+    # ----------------------------
+    # Headlines Table
+    # ----------------------------
+    st.subheader("News Headlines and Sentiment Scores")
+    st.dataframe(df.style.background_gradient(cmap="RdYlGn", subset=["Sentiment"]))
