@@ -104,7 +104,7 @@ with col1:
     pie_labels = ["Positive", "Negative", "Neutral"]
     pie_counts = [pos, neg, neu]
 
-    fig, ax = plt.subplots(figsize=(4, 4))
+    fig, ax = plt.subplots(figsize=(3.5, 3.5))
     ax.pie(pie_counts, labels=pie_labels, autopct="%1.1f%%", colors=["green", "red", "gray"])
     st.pyplot(fig)
 
