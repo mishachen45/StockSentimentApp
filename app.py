@@ -31,8 +31,21 @@ NEWSAPI_KEY = st.secrets["newsapi"]["key"]
 newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
 
 try:
-    articles = newsapi.get_everything(q=ticker, language='en', page_size=20)['articles']
-    headlines = [a['title'] for a in articles if a['title'] is not None]
+    articles = newsapi.get_everything(
+        q=ticker,
+        language='en',
+        page_size=20  # max for free NewsAPI
+    )['articles']
+
+    # Combine title + description + content for sentiment analysis
+    headlines = []
+    for a in articles:
+        text = a.get('title') or ''
+        text += ' ' + (a.get('description') or '')
+        text += ' ' + (a.get('content') or '')
+        if text.strip():
+            headlines.append(text)
+
 except:
     st.warning("Could not fetch news. Showing placeholder headlines.")
     headlines = [
@@ -64,8 +77,6 @@ col3.metric("Neutral Headlines", neu)
 # Sentiment Bar Chart (colored)
 # ----------------------------
 st.subheader("Sentiment Bar Chart")
-colors = ["green" if s > 0 else "red" if s < 0 else "gray" for s in df["Sentiment"]]
-
 fig_bar = px.bar(
     df,
     x="Headline",

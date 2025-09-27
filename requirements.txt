@@ -3,4 +3,3 @@ pandas
 matplotlib
 textblob
 newsapi-python
-plotly
