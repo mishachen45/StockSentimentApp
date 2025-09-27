@@ -73,7 +73,7 @@ col2.metric("Negative Headlines", neg)
 col3.metric("Neutral Headlines", neu)
 
 # ----------------------------
-# Layout: charts and table
+# Layout: Charts + Table + Insights
 # ----------------------------
 main_col, table_col = st.columns([3, 2])  # 3:2 ratio
 
@@ -107,6 +107,42 @@ with main_col:
     fig, ax = plt.subplots(figsize=(4, 4))
     ax.pie(pie_counts, labels=pie_labels, autopct="%1.1f%%", colors=["green", "red", "gray"])
     st.pyplot(fig)
+
+    # ----------------------------
+    # Key Insights Panel
+    # ----------------------------
+    st.subheader("📊 Key Insights")
+
+    if len(df) == 0:
+        st.write("No news data available to generate insights.")
+    else:
+        # Overall sentiment
+        avg_sentiment = df['Sentiment'].mean()
+        if avg_sentiment > 0.05:
+            overall_sentiment = "Positive"
+        elif avg_sentiment < -0.05:
+            overall_sentiment = "Negative"
+        else:
+            overall_sentiment = "Neutral"
+
+        # Most positive / negative headlines
+        most_pos_idx = df['Sentiment'].idxmax()
+        most_neg_idx = df['Sentiment'].idxmin()
+
+        # Display insights
+        st.markdown(f"**Overall Sentiment:** {overall_sentiment} ({avg_sentiment:.2f})")
+        st.markdown(f"**Total Articles Analyzed:** {len(df)}")
+        st.markdown(f"**Positive:** {pos}, **Negative:** {neg}, **Neutral:** {neu}")
+        st.markdown(f"**Most Positive Headline:** {df['Headline'][most_pos_idx]}")
+        st.markdown(f"**Most Negative Headline:** {df['Headline'][most_neg_idx]}")
+
+        # Quick takeaway
+        if avg_sentiment > 0.05:
+            st.success("Market sentiment looks favorable for this company.")
+        elif avg_sentiment < -0.05:
+            st.error("Market sentiment looks unfavorable for this company.")
+        else:
+            st.info("Market sentiment is fairly neutral at the moment.")
 
 with table_col:
     # ----------------------------
