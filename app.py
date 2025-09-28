@@ -76,7 +76,6 @@ with col1:
     # ----------------------------
     # Simple Sentiment Reference Table
     # ----------------------------
-    st.markdown("### 📊 Sentiment Reference")
     sentiment_ref = pd.DataFrame({
         "Sentiment Score": [-1, 0, 1],
         "Meaning": ["Extreme Negative", "Neutral", "Extreme Positive"]
