@@ -28,17 +28,23 @@ ticker = st.sidebar.text_input("Enter a company ticker (e.g., AAPL, TSLA):", "AA
 # ----------------------------
 try:
     ticker_obj = yf.Ticker(ticker)
-    news_items = ticker_obj.news[:20]  # latest 20 news
-    if not news_items:
-        st.warning("No news found for this ticker.")
+    news_items = ticker_obj.news[:20]  # get top 20 news
+    headlines = []
+
+    for item in news_items:
+        # Safely get 'title' to avoid KeyError
+        title = item.get('title', None)
+        if title:
+            headlines.append(title)
+
+    # Fallback if no headlines found
+    if not headlines:
         headlines = [
             f"{ticker} stock surges after earnings report",
             f"{ticker} faces regulatory investigation",
             f"{ticker} market performance stable today",
             f"No significant news for {ticker}"
         ]
-    else:
-        headlines = [item['title'] for item in news_items]
 
 except Exception as e:
     st.warning(f"Could not fetch news. Showing placeholder headlines.\nError: {e}")
