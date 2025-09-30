@@ -1,6 +1,6 @@
-streamlit==1.28.0
-pandas==2.1.0
-yfinance==0.2.27
-textblob==0.17.1
-matplotlib==3.8.0
-plotly==5.16.1
+streamlit
+pandas
+textblob
+yfinance
+matplotlib
+plotly
