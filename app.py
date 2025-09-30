@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from textblob import TextBlob
-import yfinance as yf
+from yahoo_fin import stock_info as si
 import matplotlib.pyplot as plt
 import plotly.express as px
 
@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 st.title("📈 Stock News Sentiment Analyzer")
-st.markdown("Analyze recent news headlines for any company and visualize sentiment. Powered by Yahoo Finance (via yfinance) and TextBlob.")
+st.markdown("Analyze recent news headlines for any company and visualize sentiment. Powered by Yahoo Finance (via yahoo-fin) and TextBlob.")
 
 # ----------------------------
 # Sidebar input
@@ -24,20 +24,18 @@ st.sidebar.header("User Input")
 ticker = st.sidebar.text_input("Enter a company ticker (e.g., AAPL, TSLA):", "AAPL").upper()
 
 # ----------------------------
-# Fetch news from Yahoo Finance via yfinance
+# Fetch news from Yahoo Finance RSS
 # ----------------------------
 try:
-    ticker_obj = yf.Ticker(ticker)
-    news_items = ticker_obj.news[:20]  # get top 20 news
+    news_items = si.get_yf_rss(ticker)
     headlines = []
 
     for item in news_items:
-        # Safely get 'title' to avoid KeyError
-        title = item.get('title', None)
+        title = item.get('title')
         if title:
             headlines.append(title)
 
-    # Fallback if no headlines found
+    # Fallback if no news found
     if not headlines:
         headlines = [
             f"{ticker} stock surges after earnings report",

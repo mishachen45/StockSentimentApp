@@ -1,6 +1,7 @@
 streamlit
 pandas
 textblob
-yfinance
+yahoo-fin
 matplotlib
 plotly
+
