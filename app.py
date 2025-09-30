@@ -16,7 +16,10 @@ st.set_page_config(
 )
 
 st.title("📈 Stock News Sentiment Analyzer")
-st.markdown("Analyze recent news headlines for any company and visualize sentiment. Powered by Yahoo Finance (legacy RSS) and TextBlob.")
+st.markdown(
+    "Analyze recent news headlines and summaries for any company "
+    "and visualize sentiment. Powered by Yahoo Finance (legacy RSS) and TextBlob."
+)
 
 # ----------------------------
 # Sidebar input
@@ -33,10 +36,12 @@ try:
     rss_url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
     feed = feedparser.parse(rss_url)
 
-    for entry in feed.entries[:20]:  # get latest 20 headlines
-        title = entry.get('title')
-        if title:
-            headlines.append(title)
+    for entry in feed.entries[:20]:  # get latest 20 items
+        title = entry.get('title', '')
+        summary = entry.get('summary', '')  # sometimes contains more text
+        text = f"{title} {summary}".strip()
+        if text:
+            headlines.append(text)
 
     # Fallback if no headlines found
     if not headlines:
@@ -75,6 +80,7 @@ col1, col2 = st.columns([3, 2])  # Column 1: charts, Column 2: table + insights
 # Column 1: Charts
 # ----------------------------
 with col1: 
+    # Sentiment reference table
     sentiment_ref = pd.DataFrame({
         "Sentiment Score": [-1, 0, 1],
         "Meaning": ["Extreme Negative", "Neutral", "Extreme Positive"]
