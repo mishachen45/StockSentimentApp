@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from textblob import TextBlob
-from yahoo_fin import stock_info as si
+import yfinance as yf
 import matplotlib.pyplot as plt
 import plotly.express as px
 
@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 st.title("📈 Stock News Sentiment Analyzer")
-st.markdown("Analyze recent news headlines for any company and visualize sentiment. Powered by Yahoo Finance and TextBlob.")
+st.markdown("Analyze recent news headlines for any company and visualize sentiment. Powered by Yahoo Finance (via yfinance) and TextBlob.")
 
 # ----------------------------
 # Sidebar input
@@ -24,10 +24,11 @@ st.sidebar.header("User Input")
 ticker = st.sidebar.text_input("Enter a company ticker (e.g., AAPL, TSLA):", "AAPL").upper()
 
 # ----------------------------
-# Fetch news from Yahoo Finance
+# Fetch news from Yahoo Finance via yfinance
 # ----------------------------
 try:
-    news_items = si.get_news(ticker)[:20]  # latest 20 news
+    ticker_obj = yf.Ticker(ticker)
+    news_items = ticker_obj.news[:20]  # latest 20 news
     if not news_items:
         st.warning("No news found for this ticker.")
         headlines = [
@@ -37,7 +38,7 @@ try:
             f"No significant news for {ticker}"
         ]
     else:
-        headlines = [item['title'] + ". " + item.get('summary', '') for item in news_items]
+        headlines = [item['title'] for item in news_items]
 
 except Exception as e:
     st.warning(f"Could not fetch news. Showing placeholder headlines.\nError: {e}")
