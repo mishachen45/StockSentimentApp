@@ -1,6 +1,6 @@
-streamlit==1.28.0
-pandas==2.1.0
-yahoo-fin==0.8.9.1
-textblob==0.17.1
-matplotlib==3.8.0
-plotly==5.16.1
+streamlit
+pandas
+yahoo-fin
+textblob
+matplotlib
+plotly
