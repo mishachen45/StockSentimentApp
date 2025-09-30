@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from textblob import TextBlob
-from newsapi import NewsApiClient
+from yahoo_fin import stock_info as si
 import matplotlib.pyplot as plt
 import plotly.express as px
 
@@ -15,38 +15,32 @@ st.set_page_config(
 )
 
 st.title("📈 Stock News Sentiment Analyzer")
-st.markdown("Analyze recent news headlines for any company and visualize sentiment. Powered by NewsAPI and TextBlob.")
+st.markdown("Analyze recent news headlines for any company and visualize sentiment. Powered by Yahoo Finance and TextBlob.")
 
 # ----------------------------
 # Sidebar input
 # ----------------------------
 st.sidebar.header("User Input")
-ticker = st.sidebar.text_input("Enter a company ticker (e.g., AAPL, TSLA):", "AAPL")
+ticker = st.sidebar.text_input("Enter a company ticker (e.g., AAPL, TSLA):", "AAPL").upper()
 
 # ----------------------------
-# Fetch news from NewsAPI
+# Fetch news from Yahoo Finance
 # ----------------------------
-NEWSAPI_KEY = st.secrets["newsapi"]["key"]
-newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
-
 try:
-    articles = newsapi.get_everything(
-        q=ticker,
-        language='en',
-        page_size=20
-    )['articles']
+    news_items = si.get_news(ticker)[:20]  # latest 20 news
+    if not news_items:
+        st.warning("No news found for this ticker.")
+        headlines = [
+            f"{ticker} stock surges after earnings report",
+            f"{ticker} faces regulatory investigation",
+            f"{ticker} market performance stable today",
+            f"No significant news for {ticker}"
+        ]
+    else:
+        headlines = [item['title'] + ". " + item.get('summary', '') for item in news_items]
 
-    # Combine title + description + content
-    headlines = []
-    for a in articles:
-        text = a.get('title') or ''
-        text += ' ' + (a.get('description') or '')
-        text += ' ' + (a.get('content') or '')
-        if text.strip():
-            headlines.append(text)
-
-except:
-    st.warning("Could not fetch news. Showing placeholder headlines.")
+except Exception as e:
+    st.warning(f"Could not fetch news. Showing placeholder headlines.\nError: {e}")
     headlines = [
         f"{ticker} stock surges after earnings report",
         f"{ticker} faces regulatory investigation",
@@ -81,6 +75,7 @@ with col1:
         "Meaning": ["Extreme Negative", "Neutral", "Extreme Positive"]
     })
     st.table(sentiment_ref)
+    
     # Horizontal Bar Chart
     st.subheader("Sentiment Bar Chart")
     short_labels = [h if len(h) <= 50 else h[:47] + "..." for h in df["Headline"]]
@@ -105,6 +100,7 @@ with col1:
 
     fig, ax = plt.subplots(figsize=(2.5, 2.5))
     ax.pie(pie_counts, labels=pie_labels, autopct="%1.1f%%", colors=["green", "red", "gray"])
+    ax.axis('equal')
     st.pyplot(fig)
 
 # ----------------------------
