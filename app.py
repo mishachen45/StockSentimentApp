@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from textblob import TextBlob
 from yahoo_fin import stock_info as si
+import feedparser
 import matplotlib.pyplot as plt
 import plotly.express as px
 
@@ -15,7 +16,7 @@ st.set_page_config(
 )
 
 st.title("📈 Stock News Sentiment Analyzer")
-st.markdown("Analyze recent news headlines for any company and visualize sentiment. Powered by Yahoo Finance (via yahoo-fin) and TextBlob.")
+st.markdown("Analyze recent news headlines for any company and visualize sentiment. Powered by Yahoo Finance (legacy RSS) and TextBlob.")
 
 # ----------------------------
 # Sidebar input
@@ -24,18 +25,20 @@ st.sidebar.header("User Input")
 ticker = st.sidebar.text_input("Enter a company ticker (e.g., AAPL, TSLA):", "AAPL").upper()
 
 # ----------------------------
-# Fetch news from Yahoo Finance RSS
+# Fetch news via Yahoo Finance RSS (legacy)
 # ----------------------------
-try:
-    news_items = si.get_yf_rss(ticker)
-    headlines = []
+headlines = []
 
-    for item in news_items:
-        title = item.get('title')
+try:
+    rss_url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
+    feed = feedparser.parse(rss_url)
+
+    for entry in feed.entries[:20]:  # get latest 20 headlines
+        title = entry.get('title')
         if title:
             headlines.append(title)
 
-    # Fallback if no news found
+    # Fallback if no headlines found
     if not headlines:
         headlines = [
             f"{ticker} stock surges after earnings report",
@@ -72,15 +75,12 @@ col1, col2 = st.columns([3, 2])  # Column 1: charts, Column 2: table + insights
 # Column 1: Charts
 # ----------------------------
 with col1: 
-    # ----------------------------
-    # Simple Sentiment Reference Table
-    # ----------------------------
     sentiment_ref = pd.DataFrame({
         "Sentiment Score": [-1, 0, 1],
         "Meaning": ["Extreme Negative", "Neutral", "Extreme Positive"]
     })
     st.table(sentiment_ref)
-    
+
     # Horizontal Bar Chart
     st.subheader("Sentiment Bar Chart")
     short_labels = [h if len(h) <= 50 else h[:47] + "..." for h in df["Headline"]]
@@ -98,7 +98,7 @@ with col1:
     fig_bar.update_layout(yaxis={'automargin': True})
     st.plotly_chart(fig_bar, use_container_width=True)
 
-    # Smaller Pie Chart
+    # Pie Chart
     st.subheader("Sentiment Distribution")
     pie_labels = ["Positive", "Negative", "Neutral"]
     pie_counts = [pos, neg, neu]
@@ -112,47 +112,38 @@ with col1:
 # Column 2: Table + Key Insights
 # ----------------------------
 with col2:
-    # Headlines Table
     st.subheader("News Headlines and Sentiment Scores")
     st.dataframe(df.style.background_gradient(cmap="RdYlGn", subset=["Sentiment"]))
 
-    # Key Insights Panel with 7 bullet points
     st.subheader("📊 Key Insights")
-    if len(df) == 0:
-        st.write("No news data available to generate insights.")
+    avg_sentiment = df['Sentiment'].mean() if len(df) > 0 else 0
+
+    overall_sentiment = (
+        "Positive" if avg_sentiment > 0.05
+        else "Negative" if avg_sentiment < -0.05
+        else "Neutral"
+    )
+
+    st.markdown(f"**Overall Sentiment:** {overall_sentiment} ({avg_sentiment:.2f})")
+    st.markdown(f"**Total Articles Analyzed:** {len(df)}")
+    st.markdown(f"**Positive:** {pos}, **Negative:** {neg}, **Neutral:** {neu}")
+
+    takeaways = [
+        "Most news today is related to recent earnings and financial performance.",
+        "Positive sentiment is driven by growth and market optimism.",
+        "Negative sentiment is influenced by regulatory concerns or market volatility.",
+        "A number of articles are neutral, focusing on general updates and announcements.",
+        "Investors appear cautious but some confidence remains in the company’s strategy.",
+        "News coverage shows attention on upcoming product launches or innovations.",
+        "Market reactions may vary, so monitor both positive and negative trends closely."
+    ]
+    st.markdown("**Key Takeaways:**")
+    for point in takeaways:
+        st.markdown(f"- {point}")
+
+    if avg_sentiment > 0.05:
+        st.success("Overall market sentiment looks favorable for this company.")
+    elif avg_sentiment < -0.05:
+        st.error("Overall market sentiment looks unfavorable for this company.")
     else:
-        # Overall sentiment
-        avg_sentiment = df['Sentiment'].mean()
-        if avg_sentiment > 0.05:
-            overall_sentiment = "Positive"
-        elif avg_sentiment < -0.05:
-            overall_sentiment = "Negative"
-        else:
-            overall_sentiment = "Neutral"
-
-        # Display main metrics
-        st.markdown(f"**Overall Sentiment:** {overall_sentiment} ({avg_sentiment:.2f})")
-        st.markdown(f"**Total Articles Analyzed:** {len(df)}")
-        st.markdown(f"**Positive:** {pos}, **Negative:** {neg}, **Neutral:** {neu}")
-
-        # 7 bullet points summary takeaway
-        st.markdown("**Key Takeaways:**")
-        takeaways = [
-            "Most news today is related to recent earnings and financial performance.",
-            "Positive sentiment is driven by growth and market optimism.",
-            "Negative sentiment is influenced by regulatory concerns or market volatility.",
-            "A number of articles are neutral, focusing on general updates and announcements.",
-            "Investors appear cautious but some confidence remains in the company’s strategy.",
-            "News coverage shows attention on upcoming product launches or innovations.",
-            "Market reactions may vary, so monitor both positive and negative trends closely."
-        ]
-        for point in takeaways:
-            st.markdown(f"- {point}")
-
-        # Quick overall takeaway
-        if avg_sentiment > 0.05:
-            st.success("Overall market sentiment looks favorable for this company.")
-        elif avg_sentiment < -0.05:
-            st.error("Overall market sentiment looks unfavorable for this company.")
-        else:
-            st.info("Overall market sentiment is fairly neutral at the moment.")
+        st.info("Overall market sentiment is fairly neutral at the moment.")
