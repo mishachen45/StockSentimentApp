@@ -33,9 +33,10 @@ num_articles = st.sidebar.slider(
 )
 
 # ----------------------------
-# Fetch news via Yahoo Finance RSS
+# Fetch news via Yahoo Finance RSS (legacy) with links
 # ----------------------------
 headlines = []
+links = []
 
 try:
     rss_url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
@@ -44,10 +45,13 @@ try:
     for entry in feed.entries[:num_articles]:
         title = entry.get('title', '')
         summary = entry.get('summary', '')
+        link = entry.get('link', '#')
         text = f"{title} {summary}".strip()
         if text:
             headlines.append(text)
+            links.append(link)
 
+    # Fallback if no headlines found
     if not headlines:
         headlines = [
             f"{ticker} stock surges after earnings report",
@@ -55,6 +59,7 @@ try:
             f"{ticker} market performance stable today",
             f"No significant news for {ticker}"
         ]
+        links = ["#"]*len(headlines)
 
 except Exception as e:
     st.warning(f"Could not fetch news. Showing placeholder headlines.\nError: {e}")
@@ -64,12 +69,17 @@ except Exception as e:
         f"{ticker} market performance stable today",
         f"No significant news for {ticker}"
     ]
+    links = ["#"]*len(headlines)
 
 # ----------------------------
 # Sentiment analysis
 # ----------------------------
 sentiments = [TextBlob(h).sentiment.polarity for h in headlines]
-df = pd.DataFrame({"Headline": headlines, "Sentiment": sentiments})
+df = pd.DataFrame({
+    "Headline": headlines,
+    "Sentiment": sentiments,
+    "Link": links
+})
 
 # ----------------------------
 # Summary metrics
@@ -133,11 +143,18 @@ fig_bar.update_layout(yaxis={'automargin': True}, height=600)
 st.plotly_chart(fig_bar, use_container_width=True)
 
 # ----------------------------
-# News Table
+# News Table with clickable links
 # ----------------------------
 st.markdown("---")
 st.markdown("### News Headlines")
-st.dataframe(df.style.background_gradient(cmap="RdYlGn", subset=["Sentiment"]))
+df_display = df.copy()
+df_display["Headline"] = df_display.apply(
+    lambda row: f"[{row['Headline']}]({row['Link']})", axis=1
+)
+st.dataframe(
+    df_display.style.format({"Sentiment": "{:.2f}"}).background_gradient(cmap="RdYlGn", subset=["Sentiment"]),
+    height=400
+)
 
 # ----------------------------
 # Key Insights
