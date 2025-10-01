@@ -4,45 +4,11 @@ from textblob import TextBlob
 import feedparser
 import plotly.express as px
 import plotly.graph_objects as go
-import matplotlib.colors as mcolors
 
 # ----------------------------
 # Page configuration
 # ----------------------------
 st.set_page_config(page_title="Stock News Dashboard", layout="wide")
-
-# ----------------------------
-# Custom CSS for colors
-# ----------------------------
-st.markdown(
-    """
-    <style>
-    /* App background and text */
-    .stApp {
-        background-color: #1E1E2F;
-        color: #E0E0E0;
-    }
-    h1, h2, h3, h4, h5 {
-        color: #00FFAB;
-    }
-    /* Sidebar */
-    .sidebar .sidebar-content {
-        background-color: #2A2A3F;
-        color: #E0E0E0;
-    }
-    /* Links */
-    a {
-        color: #4C6EF5;
-        text-decoration: none;
-    }
-    a:hover {
-        text-decoration: underline;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 st.title("📊 Stock News Sentiment Dashboard")
 st.markdown(
     "Analyze recent news headlines and summaries for any company. "
@@ -84,60 +50,61 @@ except Exception as e:
 sentiments = [TextBlob(h).sentiment.polarity for h in headlines]
 df = pd.DataFrame({"Headline": headlines, "Sentiment": sentiments, "Link": links})
 
-pos = sum(s > 0 for s in sentiments)
-neg = sum(s < 0 for s in sentiments)
-neu = sum(s == 0 for s in sentiments)
-avg_sent = df['Sentiment'].mean() if len(df) > 0 else 0
-overall_sent = "Positive" if avg_sent > 0.05 else "Negative" if avg_sent < -0.05 else "Neutral"
+pos = sum(s>0 for s in sentiments)
+neg = sum(s<0 for s in sentiments)
+neu = sum(s==0 for s in sentiments)
+avg_sent = df['Sentiment'].mean() if len(df)>0 else 0
+overall_sent = "Positive" if avg_sent>0.05 else "Negative" if avg_sent<-0.05 else "Neutral"
 
 # ----------------------------
-# Metrics cards
+# Top metrics
 # ----------------------------
 with st.container():
     col1, col2, col3, col4 = st.columns(4)
-    col1.markdown(f"📄 **Articles**: {len(df)}")
-    col2.markdown(f"🟢 **Positive**: {pos}")
-    col3.markdown(f"🔴 **Negative**: {neg}")
-    col4.markdown(f"⚪ **Neutral**: {neu}")
+    col1.metric("Articles", len(df))
+    col2.metric("Positive", pos)
+    col3.metric("Negative", neg)
+    col4.metric("Neutral", neu)
 
-sentiment_color = "#00FFAB" if overall_sent == "Positive" else "#FF3860" if overall_sent == "Negative" else "#CCCCCC"
+sentiment_color = "green" if overall_sent=="Positive" else "red" if overall_sent=="Negative" else "gray"
 st.markdown(f"**Overall Sentiment:** <span style='color:{sentiment_color}'>{overall_sent} ({avg_sent:.2f})</span>", unsafe_allow_html=True)
 
 st.markdown("---")
 
 # ----------------------------
-# Charts section
+# Charts section: pie & bar side by side
 # ----------------------------
 with st.container():
-    pie_col, bar_col = st.columns([1, 2])
+    pie_col, bar_col = st.columns([1, 2])  # More width for bar chart
 
     # Pie chart
     with pie_col:
         st.subheader("Sentiment Distribution")
         fig_pie = go.Figure(data=[go.Pie(
-            labels=["Positive", "Negative", "Neutral"],
+            labels=["Positive","Negative","Neutral"],
             values=[pos, neg, neu],
-            marker_colors=["#00FFAB", "#FF3860", "#CCCCCC"],
+            marker_colors=["green","red","gray"],
             hoverinfo="label+percent+value",
             textinfo="label+percent"
         )])
-        fig_pie.update_layout(height=450, paper_bgcolor="#1E1E2F", font_color="#E0E0E0")
+        fig_pie.update_layout(height=450, margin=dict(t=0,b=0,l=0,r=0))
         st.plotly_chart(fig_pie, use_container_width=True)
 
     # Bar chart
     with bar_col:
         st.subheader("Headlines Sentiment")
-        short_labels = [h if len(h) <= 60 else h[:57] + "..." for h in df["Headline"]]
+        short_labels = [h if len(h)<=60 else h[:57]+"..." for h in df["Headline"]]
         fig_bar = px.bar(
             df,
             x="Sentiment",
             y=short_labels,
             orientation='h',
-            color=df["Sentiment"].apply(lambda x: "#00FFAB" if x > 0 else "#FF3860" if x < 0 else "#CCCCCC"),
-            labels={"y": "Headline"},
-            hover_data={"Headline": True, "Sentiment": True}
+            color=df["Sentiment"].apply(lambda x: "Positive" if x>0 else "Negative" if x<0 else "Neutral"),
+            color_discrete_map={"Positive":"green","Negative":"red","Neutral":"gray"},
+            labels={"y":"Headline"},
+            hover_data={"Headline":True,"Sentiment":True}
         )
-        fig_bar.update_layout(yaxis={'automargin': True}, height=450, paper_bgcolor="#1E1E2F", font_color="#E0E0E0")
+        fig_bar.update_layout(yaxis={'automargin': True}, height=450)
         st.plotly_chart(fig_bar, use_container_width=True)
 
 st.markdown("---")
@@ -148,15 +115,9 @@ st.markdown("---")
 st.subheader("News Headlines")
 df_display = df.copy()
 df_display["Headline"] = df_display.apply(lambda row: f"[{row['Headline']}]({row['Link']})", axis=1)
-
-# Create a proper colormap for sentiment
-cmap = mcolors.LinearSegmentedColormap.from_list("sentiment_cmap", ["#FF3860", "#CCCCCC", "#00FFAB"])
-
 st.dataframe(
     df_display.style
-    .format({"Sentiment": "{:.2f}"})
-    .background_gradient(cmap=cmap, subset=["Sentiment"])
-    .set_properties(**{"color": "#E0E0E0"})
-    .set_table_styles([{"selector": "a", "props": "color:#4C6EF5;text-decoration:none;"}]),
+    .format({"Sentiment":"{:.2f}"})
+    .background_gradient(cmap="RdYlGn", subset=["Sentiment"]),
     height=700
 )
