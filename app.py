@@ -116,4 +116,8 @@ st.subheader("News Headlines")
 df_display = df.copy()
 df_display["Headline"] = df_display.apply(lambda row: f"[{row['Headline']}]({row['Link']})", axis=1)
 st.dataframe(
-    df_display.style.format({"Sentiment":"{:.2f}"}).background_gradient(cmap="RdYlGn", subse
+    df_display.style
+    .format({"Sentiment":"{:.2f}"})
+    .background_gradient(cmap="RdYlGn", subset=["Sentiment"]),
+    height=700
+)
