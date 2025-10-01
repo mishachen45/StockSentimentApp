@@ -9,6 +9,35 @@ import plotly.graph_objects as go
 # Page configuration
 # ----------------------------
 st.set_page_config(page_title="Stock News Dashboard", layout="wide")
+st.markdown(
+    """
+    <style>
+    /* Background and text */
+    .stApp {
+        background-color: #121212;
+        color: #FFFFFF;
+    }
+    h1, h2, h3, h4, h5 {
+        color: #00FFAB;
+    }
+    /* Sidebar */
+    .sidebar .sidebar-content {
+        background-color: #1E1E1E;
+        color: #FFFFFF;
+    }
+    /* Links */
+    a {
+        color: #4C6EF5;
+        text-decoration: none;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.title("📊 Stock News Sentiment Dashboard")
 st.markdown(
     "Analyze recent news headlines and summaries for any company. "
@@ -57,14 +86,14 @@ avg_sent = df['Sentiment'].mean() if len(df)>0 else 0
 overall_sent = "Positive" if avg_sent>0.05 else "Negative" if avg_sent<-0.05 else "Neutral"
 
 # ----------------------------
-# Top metrics
+# Top metrics cards
 # ----------------------------
 with st.container():
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Articles", len(df))
-    col2.metric("Positive", pos)
-    col3.metric("Negative", neg)
-    col4.metric("Neutral", neu)
+    col1.markdown(f"📄 **Articles**: {len(df)}")
+    col2.markdown(f"🟢 **Positive**: {pos}")
+    col3.markdown(f"🔴 **Negative**: {neg}")
+    col4.markdown(f"⚪ **Neutral**: {neu}")
 
 sentiment_color = "green" if overall_sent=="Positive" else "red" if overall_sent=="Negative" else "gray"
 st.markdown(f"**Overall Sentiment:** <span style='color:{sentiment_color}'>{overall_sent} ({avg_sent:.2f})</span>", unsafe_allow_html=True)
@@ -75,7 +104,7 @@ st.markdown("---")
 # Charts section: pie & bar side by side
 # ----------------------------
 with st.container():
-    pie_col, bar_col = st.columns([1, 2])  # More width for bar chart
+    pie_col, bar_col = st.columns([1, 2])  # More space for bar chart
 
     # Pie chart
     with pie_col:
@@ -83,11 +112,11 @@ with st.container():
         fig_pie = go.Figure(data=[go.Pie(
             labels=["Positive","Negative","Neutral"],
             values=[pos, neg, neu],
-            marker_colors=["green","red","gray"],
+            marker_colors=["#00FFAB","#FF3860","#AAAAAA"],
             hoverinfo="label+percent+value",
             textinfo="label+percent"
         )])
-        fig_pie.update_layout(height=450, margin=dict(t=0,b=0,l=0,r=0))
+        fig_pie.update_layout(height=450, paper_bgcolor="#121212", font_color="#FFFFFF")
         st.plotly_chart(fig_pie, use_container_width=True)
 
     # Bar chart
@@ -99,12 +128,11 @@ with st.container():
             x="Sentiment",
             y=short_labels,
             orientation='h',
-            color=df["Sentiment"].apply(lambda x: "Positive" if x>0 else "Negative" if x<0 else "Neutral"),
-            color_discrete_map={"Positive":"green","Negative":"red","Neutral":"gray"},
+            color=df["Sentiment"].apply(lambda x: "#00FFAB" if x>0 else "#FF3860" if x<0 else "#AAAAAA"),
             labels={"y":"Headline"},
             hover_data={"Headline":True,"Sentiment":True}
         )
-        fig_bar.update_layout(yaxis={'automargin': True}, height=450)
+        fig_bar.update_layout(yaxis={'automargin': True}, height=450, paper_bgcolor="#121212", font_color="#FFFFFF")
         st.plotly_chart(fig_bar, use_container_width=True)
 
 st.markdown("---")
@@ -118,6 +146,8 @@ df_display["Headline"] = df_display.apply(lambda row: f"[{row['Headline']}]({row
 st.dataframe(
     df_display.style
     .format({"Sentiment":"{:.2f}"})
-    .background_gradient(cmap="RdYlGn", subset=["Sentiment"]),
+    .background_gradient(cmap=["#121212","#222222"], subset=["Sentiment"])
+    .set_properties(**{"color":"#FFFFFF"})
+    .set_table_styles([{"selector":"a","props":"color:#4C6EF5;text-decoration:none;"}]),
     height=700
 )
