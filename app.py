@@ -75,7 +75,7 @@ st.markdown("---")
 # Charts section: pie & bar side by side
 # ----------------------------
 with st.container():
-    pie_col, bar_col = st.columns([1, 2])  # Give more space to bar chart
+    pie_col, bar_col = st.columns([1, 2])  # More width for bar chart
 
     # Pie chart
     with pie_col:
@@ -87,7 +87,7 @@ with st.container():
             hoverinfo="label+percent+value",
             textinfo="label+percent"
         )])
-        fig_pie.update_layout(height=400, margin=dict(t=0,b=0,l=0,r=0))
+        fig_pie.update_layout(height=450, margin=dict(t=0,b=0,l=0,r=0))
         st.plotly_chart(fig_pie, use_container_width=True)
 
     # Bar chart
@@ -104,38 +104,16 @@ with st.container():
             labels={"y":"Headline"},
             hover_data={"Headline":True,"Sentiment":True}
         )
-        fig_bar.update_layout(yaxis={'automargin': True}, height=400)
+        fig_bar.update_layout(yaxis={'automargin': True}, height=450)
         st.plotly_chart(fig_bar, use_container_width=True)
 
 st.markdown("---")
 
 # ----------------------------
-# News & Key Takeaways side by side
+# Full-width News Table
 # ----------------------------
-with st.container():
-    news_col, takeaway_col = st.columns([3, 1])  # More space to news table
-
-    # News table
-    with news_col:
-        st.subheader("News Headlines")
-        df_display = df.copy()
-        df_display["Headline"] = df_display.apply(lambda row: f"[{row['Headline']}]({row['Link']})", axis=1)
-        st.dataframe(
-            df_display.style.format({"Sentiment":"{:.2f}"}).background_gradient(cmap="RdYlGn", subset=["Sentiment"]),
-            height=600
-        )
-
-    # Key takeaways
-    with takeaway_col:
-        st.subheader("Key Takeaways")
-        takeaways = [
-            "Most news today relates to earnings and financial performance.",
-            "Positive sentiment driven by growth and optimism.",
-            "Negative sentiment influenced by regulatory concerns or market volatility.",
-            "Several articles are neutral, giving general updates.",
-            "Investors appear cautious but confident in company strategy.",
-            "Attention on upcoming products or innovations.",
-            "Market reactions vary; monitor trends closely."
-        ]
-        for t in takeaways:
-            st.markdown(f"- {t}")
+st.subheader("News Headlines")
+df_display = df.copy()
+df_display["Headline"] = df_display.apply(lambda row: f"[{row['Headline']}]({row['Link']})", axis=1)
+st.dataframe(
+    df_display.style.format({"Sentiment":"{:.2f}"}).background_gradient(cmap="RdYlGn", subse
