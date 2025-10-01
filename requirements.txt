@@ -1,7 +1,5 @@
 streamlit
 pandas
 textblob
-yahoo-fin
 feedparser
-matplotlib
 plotly
