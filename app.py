@@ -8,11 +8,7 @@ import plotly.graph_objects as go
 # ----------------------------
 # Page configuration
 # ----------------------------
-st.set_page_config(
-    page_title="Stock News Dashboard",
-    layout="wide"
-)
-
+st.set_page_config(page_title="Stock News Dashboard", layout="wide")
 st.title("📊 Stock News Sentiment Dashboard")
 st.markdown(
     "Analyze recent news headlines and summaries for any company. "
@@ -61,9 +57,8 @@ avg_sent = df['Sentiment'].mean() if len(df)>0 else 0
 overall_sent = "Positive" if avg_sent>0.05 else "Negative" if avg_sent<-0.05 else "Neutral"
 
 # ----------------------------
-# Dashboard Layout
-# ----------------------------
 # Top metrics
+# ----------------------------
 with st.container():
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Articles", len(df))
@@ -76,12 +71,14 @@ st.markdown(f"**Overall Sentiment:** <span style='color:{sentiment_color}'>{over
 
 st.markdown("---")
 
-# Charts and table side by side
+# ----------------------------
+# Charts section: pie & bar side by side
+# ----------------------------
 with st.container():
-    chart_col, news_col = st.columns([2, 3])
+    pie_col, bar_col = st.columns([1, 2])  # Give more space to bar chart
 
-    # Left column: Charts
-    with chart_col:
+    # Pie chart
+    with pie_col:
         st.subheader("Sentiment Distribution")
         fig_pie = go.Figure(data=[go.Pie(
             labels=["Positive","Negative","Neutral"],
@@ -90,9 +87,11 @@ with st.container():
             hoverinfo="label+percent+value",
             textinfo="label+percent"
         )])
-        fig_pie.update_layout(height=500, width=500, margin=dict(t=0,b=0,l=0,r=0))
+        fig_pie.update_layout(height=400, margin=dict(t=0,b=0,l=0,r=0))
         st.plotly_chart(fig_pie, use_container_width=True)
 
+    # Bar chart
+    with bar_col:
         st.subheader("Headlines Sentiment")
         short_labels = [h if len(h)<=60 else h[:57]+"..." for h in df["Headline"]]
         fig_bar = px.bar(
@@ -105,30 +104,38 @@ with st.container():
             labels={"y":"Headline"},
             hover_data={"Headline":True,"Sentiment":True}
         )
-        fig_bar.update_layout(yaxis={'automargin': True}, height=500)
+        fig_bar.update_layout(yaxis={'automargin': True}, height=400)
         st.plotly_chart(fig_bar, use_container_width=True)
 
-    # Right column: News table
+st.markdown("---")
+
+# ----------------------------
+# News & Key Takeaways side by side
+# ----------------------------
+with st.container():
+    news_col, takeaway_col = st.columns([3, 1])  # More space to news table
+
+    # News table
     with news_col:
         st.subheader("News Headlines")
         df_display = df.copy()
         df_display["Headline"] = df_display.apply(lambda row: f"[{row['Headline']}]({row['Link']})", axis=1)
         st.dataframe(
             df_display.style.format({"Sentiment":"{:.2f}"}).background_gradient(cmap="RdYlGn", subset=["Sentiment"]),
-            height=800
+            height=600
         )
 
-# Key takeaways
-st.markdown("---")
-st.subheader("Key Takeaways")
-takeaways = [
-    "Most news today relates to earnings and financial performance.",
-    "Positive sentiment driven by growth and optimism.",
-    "Negative sentiment influenced by regulatory concerns or market volatility.",
-    "Several articles are neutral, giving general updates.",
-    "Investors appear cautious but confident in company strategy.",
-    "Attention on upcoming products or innovations.",
-    "Market reactions vary; monitor trends closely."
-]
-for t in takeaways:
-    st.markdown(f"- {t}")
+    # Key takeaways
+    with takeaway_col:
+        st.subheader("Key Takeaways")
+        takeaways = [
+            "Most news today relates to earnings and financial performance.",
+            "Positive sentiment driven by growth and optimism.",
+            "Negative sentiment influenced by regulatory concerns or market volatility.",
+            "Several articles are neutral, giving general updates.",
+            "Investors appear cautious but confident in company strategy.",
+            "Attention on upcoming products or innovations.",
+            "Market reactions vary; monitor trends closely."
+        ]
+        for t in takeaways:
+            st.markdown(f"- {t}")
