@@ -57,22 +57,16 @@ ticker = st.text_input("Enter Stock Ticker (e.g. AAPL, TSLA):", "").upper()
 # FETCH NEWS VIA RSS
 # =========================
 def fetch_news_rss(ticker):
-    urls = [
-        f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US",
-        f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US"  # duplicate for stability
-    ]
+    url = f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US"
+    feed = feedparser.parse(url)
     articles = []
-    for url in urls:
-        feed = feedparser.parse(url)
-        for entry in feed.entries:
-            title = entry.title
-            link = entry.link
-            date = datetime.datetime(*entry.published_parsed[:6])
-            sentiment = analyze_sentiment(title)
-            articles.append({"Title": title, "Link": link, "Date": date, "Sentiment Score": sentiment})
-        if len(articles) >= 20:
-            break
-    return pd.DataFrame(articles[:20])
+    for entry in feed.entries[:20]:  # up to 20 articles
+        title = entry.title
+        link = entry.link
+        date = datetime.datetime(*entry.published_parsed[:6])
+        sentiment = analyze_sentiment(title)
+        articles.append({"Title": title, "Link": link, "Date": date, "Sentiment Score": sentiment})
+    return pd.DataFrame(articles)
 
 if ticker:
     df = fetch_news_rss(ticker)
@@ -119,25 +113,8 @@ if ticker:
         with col_bar:
             st.markdown("### 📊 Sentiment Score by Article")
             df_sorted = df.sort_values(by="Sentiment Score", ascending=False)
-            df_sorted["ShortTitle"] = df_sorted["Title"].apply(lambda x: " ".join(x.split()[:8]) + ("..." if len(x.split())>8 else ""))
-            fig2, ax2 = plt.subplots(figsize=(7,8))
-            ax2.barh(
-                df_sorted["ShortTitle"],
-                df_sorted["Sentiment Score"],
-                color=df_sorted["Sentiment Score"].apply(lambda x: "#22c55e" if x>0 else "#ef4444" if x<0 else "#94a3b8")
+            df_sorted["ShortTitle"] = df_sorted["Title"].apply(
+                lambda x: " ".join(x.split()[:8]) + ("..." if len(x.split())>8 else "")
             )
-            ax2.set_xlabel("Sentiment Score")
-            ax2.set_ylabel("Headline (first 8 words)")
-            st.pyplot(fig2)
 
-        # =========================
-        # NEWS TABLE
-        # =========================
-        st.markdown("### 🗞️ News Headlines")
-        st.dataframe(
-            df[["Date","Title","Sentiment Score"]],
-            use_container_width=True,
-            height=700
-        )
-else:
-    st.info("Enter a stock ticker to start analyzing sentiment.")
+            fig2, ax
