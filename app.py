@@ -85,7 +85,7 @@ if ticker:
             st.metric("Negative Articles", f"{(df['Sentiment Score'] < 0).sum()}")
 
         # =========================
-        # CHARTS: PIE + BAR
+        # CHARTS: PIE + BAR (side by side)
         # =========================
         col_pie, col_bar = st.columns([1.2, 1])
 
@@ -97,7 +97,7 @@ if ticker:
                 "Neutral": (df["Sentiment Score"] == 0).sum(),
                 "Negative": (df["Sentiment Score"] < 0).sum()
             }
-            fig1, ax1 = plt.subplots(figsize=(5,5))
+            fig1, ax1 = plt.subplots(figsize=(5,7))
             ax1.pie(
                 sentiment_counts.values(),
                 labels=sentiment_counts.keys(),
@@ -116,20 +116,24 @@ if ticker:
                 lambda x: " ".join(x.split()[:8]) + ("..." if len(x.split())>8 else "")
             )
 
-            fig2, ax2 = plt.subplots(figsize=(8,10))  # taller chart
+            # Taller figure to align with pie chart
+            fig2, ax2 = plt.subplots(figsize=(6,7))
             bars = ax2.barh(
                 df_sorted["ShortTitle"],
                 df_sorted["Sentiment Score"],
-                color=df_sorted["Sentiment Score"].apply(lambda x: "#22c55e" if x>0 else "#ef4444" if x<0 else "#94a3b8"),
-                height=0.6
+                color=df_sorted["Sentiment Score"].apply(
+                    lambda x: "#22c55e" if x>0 else "#ef4444" if x<0 else "#94a3b8"
+                ),
+                height=0.7  # thicker bars
             )
 
             # Font size and spacing
             ax2.set_yticks(range(len(df_sorted)))
-            ax2.set_yticklabels(df_sorted["ShortTitle"], fontsize=12)
-            ax2.set_xlabel("Sentiment Score", fontsize=12)
-            ax2.set_ylabel("Headline (first 8 words)", fontsize=12)
-            ax2.margins(y=0.1)
+            ax2.set_yticklabels(df_sorted["ShortTitle"], fontsize=14)
+            ax2.set_xlabel("Sentiment Score", fontsize=14)
+            ax2.set_ylabel("Headline (first 8 words)", fontsize=14)
+            ax2.margins(y=0.15)
+            ax2.invert_yaxis()  # largest score on top
 
             st.pyplot(fig2)
 
