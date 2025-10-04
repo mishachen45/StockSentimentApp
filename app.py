@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import feedparser
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
-from textwrap import shorten
 import datetime
 
 # =========================
@@ -117,4 +116,31 @@ if ticker:
                 lambda x: " ".join(x.split()[:8]) + ("..." if len(x.split())>8 else "")
             )
 
-            fig2, ax
+            fig2, ax2 = plt.subplots(figsize=(8,10))  # taller chart
+            bars = ax2.barh(
+                df_sorted["ShortTitle"],
+                df_sorted["Sentiment Score"],
+                color=df_sorted["Sentiment Score"].apply(lambda x: "#22c55e" if x>0 else "#ef4444" if x<0 else "#94a3b8"),
+                height=0.6
+            )
+
+            # Font size and spacing
+            ax2.set_yticks(range(len(df_sorted)))
+            ax2.set_yticklabels(df_sorted["ShortTitle"], fontsize=12)
+            ax2.set_xlabel("Sentiment Score", fontsize=12)
+            ax2.set_ylabel("Headline (first 8 words)", fontsize=12)
+            ax2.margins(y=0.1)
+
+            st.pyplot(fig2)
+
+        # =========================
+        # NEWS TABLE
+        # =========================
+        st.markdown("### 🗞️ News Headlines")
+        st.dataframe(
+            df[["Date","Title","Sentiment Score"]],
+            use_container_width=True,
+            height=700
+        )
+else:
+    st.info("Enter a stock ticker to start analyzing sentiment.")
