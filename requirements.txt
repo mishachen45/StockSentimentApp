@@ -1,5 +1,7 @@
 streamlit
 pandas
-textblob
-feedparser
-plotly
+matplotlib
+yahoo_fin
+torch
+transformers
+
