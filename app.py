@@ -1,123 +1,146 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 from textblob import TextBlob
-import feedparser
-import plotly.express as px
-import plotly.graph_objects as go
+from yahoo_fin import stock_info as si
+import datetime
 
-# ----------------------------
-# Page configuration
-# ----------------------------
-st.set_page_config(page_title="Stock News Dashboard", layout="wide")
-st.title("📊 Stock News Sentiment Dashboard")
-st.markdown(
-    "Analyze recent news headlines and summaries for any company. "
-    "Powered by Yahoo Finance RSS + TextBlob."
+# =========================
+# 🎨 PAGE CONFIG
+# =========================
+st.set_page_config(
+    page_title="Stock Sentiment Analyzer",
+    page_icon="📊",
+    layout="wide",
 )
 
-# ----------------------------
-# Sidebar input
-# ----------------------------
-st.sidebar.header("User Input")
-ticker = st.sidebar.text_input("Enter company ticker:", "AAPL").upper()
-num_articles = st.sidebar.slider("Number of news articles:", 5, 30, 20)
+# =========================
+# 💅 CUSTOM STYLES
+# =========================
+st.markdown("""
+    <style>
+        body {
+            background-color: #f7f9fc;
+            color: #1a1a1a;
+        }
+        .main {
+            padding: 2rem;
+        }
+        h1, h2, h3 {
+            color: #0b132b;
+            font-weight: 700;
+        }
+        .stTextInput>div>div>input {
+            border-radius: 12px;
+            border: 1px solid #d9e3f0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        div[data-testid="stMetricValue"] {
+            font-size: 1.6rem;
+            color: #0073e6;
+        }
+        /* Card-like container */
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-# ----------------------------
-# Fetch RSS feed
-# ----------------------------
-headlines, links = [], []
-try:
-    feed = feedparser.parse(f"https://finance.yahoo.com/rss/headline?s={ticker}")
-    for entry in feed.entries[:num_articles]:
-        title = entry.get('title', '')
-        summary = entry.get('summary', '')
-        link = entry.get('link', '#')
-        text = f"{title} {summary}".strip()
-        if text:
-            headlines.append(text)
-            links.append(link)
-    if not headlines:
-        headlines = ["No news available"]
-        links = ["#"]
-except Exception as e:
-    st.warning(f"Could not fetch news: {e}")
-    headlines = ["No news available"]
-    links = ["#"]
+# =========================
+# 🧠 FUNCTIONS
+# =========================
+def analyze_sentiment(text):
+    blob = TextBlob(text)
+    return blob.sentiment.polarity
 
-# ----------------------------
-# Sentiment analysis
-# ----------------------------
-sentiments = [TextBlob(h).sentiment.polarity for h in headlines]
-df = pd.DataFrame({"Headline": headlines, "Sentiment": sentiments, "Link": links})
+def get_news(ticker):
+    try:
+        news_list = si.get_yf_rss(ticker)
+        news = []
+        for item in news_list:
+            title = item["title"]
+            link = item["link"]
+            date = datetime.datetime.strptime(item["published"], "%Y-%m-%dT%H:%M:%SZ")
+            sentiment = analyze_sentiment(title)
+            news.append({"Title": title, "Date": date, "Sentiment": sentiment, "Link": link})
+        return pd.DataFrame(news)
+    except Exception as e:
+        st.error(f"Could not fetch news. Error: {e}")
+        return pd.DataFrame(columns=["Title", "Date", "Sentiment", "Link"])
 
-pos = sum(s>0 for s in sentiments)
-neg = sum(s<0 for s in sentiments)
-neu = sum(s==0 for s in sentiments)
-avg_sent = df['Sentiment'].mean() if len(df)>0 else 0
-overall_sent = "Positive" if avg_sent>0.05 else "Negative" if avg_sent<-0.05 else "Neutral"
+# =========================
+# 🧭 HEADER
+# =========================
+st.title("📊 Stock Sentiment Analyzer")
+st.markdown("Get real-time market sentiment from recent stock news — clean, fast, and insightful.")
 
-# ----------------------------
-# Top metrics
-# ----------------------------
-with st.container():
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Articles", len(df))
-    col2.metric("Positive", pos)
-    col3.metric("Negative", neg)
-    col4.metric("Neutral", neu)
+# =========================
+# 🔍 INPUT
+# =========================
+ticker = st.text_input("Enter Stock Ticker (e.g. AAPL, TSLA, NVDA):", "").upper()
 
-sentiment_color = "green" if overall_sent=="Positive" else "red" if overall_sent=="Negative" else "gray"
-st.markdown(f"**Overall Sentiment:** <span style='color:{sentiment_color}'>{overall_sent} ({avg_sent:.2f})</span>", unsafe_allow_html=True)
+if ticker:
+    df = get_news(ticker)
+    if not df.empty:
+        avg_sent = df["Sentiment"].mean()
 
-st.markdown("---")
+        # =========================
+        # 🧱 LAYOUT — METRICS
+        # =========================
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Average Sentiment", f"{avg_sent:.2f}")
+        with col2:
+            st.metric("Positive Articles", f"{(df['Sentiment'] > 0).sum()}")
+        with col3:
+            st.metric("Negative Articles", f"{(df['Sentiment'] < 0).sum()}")
 
-# ----------------------------
-# Charts section: pie & bar side by side
-# ----------------------------
-with st.container():
-    pie_col, bar_col = st.columns([1, 2])  # More width for bar chart
+        st.markdown("### 📰 News Headlines")
 
-    # Pie chart
-    with pie_col:
-        st.subheader("Sentiment Distribution")
-        fig_pie = go.Figure(data=[go.Pie(
-            labels=["Positive","Negative","Neutral"],
-            values=[pos, neg, neu],
-            marker_colors=["green","red","gray"],
-            hoverinfo="label+percent+value",
-            textinfo="label+percent"
-        )])
-        fig_pie.update_layout(height=450, margin=dict(t=0,b=0,l=0,r=0))
-        st.plotly_chart(fig_pie, use_container_width=True)
+        # =========================
+        # 📊 LAYOUT — CHARTS
+        # =========================
+        col_pie, col_bar = st.columns([1.2, 1])
+        with col_pie:
+            st.markdown("#### Sentiment Distribution")
+            sentiment_counts = df["Sentiment"].apply(
+                lambda x: "Positive" if x > 0 else ("Negative" if x < 0 else "Neutral")
+            ).value_counts()
+            fig1, ax1 = plt.subplots(figsize=(5, 5))
+            ax1.pie(sentiment_counts, labels=sentiment_counts.index, autopct="%1.1f%%", startangle=90)
+            ax1.axis("equal")
+            st.pyplot(fig1)
 
-    # Bar chart
-    with bar_col:
-        st.subheader("Headlines Sentiment")
-        short_labels = [h if len(h)<=60 else h[:57]+"..." for h in df["Headline"]]
-        fig_bar = px.bar(
-            df,
-            x="Sentiment",
-            y=short_labels,
-            orientation='h',
-            color=df["Sentiment"].apply(lambda x: "Positive" if x>0 else "Negative" if x<0 else "Neutral"),
-            color_discrete_map={"Positive":"green","Negative":"red","Neutral":"gray"},
-            labels={"y":"Headline"},
-            hover_data={"Headline":True,"Sentiment":True}
+        with col_bar:
+            st.markdown("#### Sentiment Scores by Article")
+            fig2, ax2 = plt.subplots(figsize=(6, 5))
+            df_sorted = df.sort_values("Sentiment", ascending=False)
+            ax2.barh(df_sorted["Title"].head(10), df_sorted["Sentiment"].head(10))
+            ax2.set_xlabel("Sentiment")
+            plt.tight_layout()
+            st.pyplot(fig2)
+
+        # =========================
+        # 🗞 NEWS TABLE
+        # =========================
+        st.markdown("#### 🧾 Detailed Headlines")
+        st.dataframe(
+            df[["Date", "Title", "Sentiment"]],
+            use_container_width=True,
+            hide_index=True,
+            height=700
         )
-        fig_bar.update_layout(yaxis={'automargin': True}, height=450)
-        st.plotly_chart(fig_bar, use_container_width=True)
 
-st.markdown("---")
-
-# ----------------------------
-# Full-width News Table
-# ----------------------------
-st.subheader("News Headlines")
-df_display = df.copy()
-df_display["Headline"] = df_display.apply(lambda row: f"[{row['Headline']}]({row['Link']})", axis=1)
-st.dataframe(
-    df_display.style
-    .format({"Sentiment":"{:.2f}"})
-    .background_gradient(cmap="RdYlGn", subset=["Sentiment"]),
-    height=700
-)
+    else:
+        st.warning("No news articles found for this ticker.")
+else:
+    st.info("👆 Enter a stock symbol above to start analyzing sentiment.")
